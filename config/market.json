@@ -1,0 +1,17 @@
+{
+  "market": "spot",
+  "quote_asset": "USDT",
+  "stream_type": "trade",
+  "instruments": [
+    { "symbol": "BTCUSDT", "group": "blue_chip" },
+    { "symbol": "ETHUSDT", "group": "blue_chip" },
+    { "symbol": "BNBUSDT", "group": "blue_chip" },
+    { "symbol": "SOLUSDT", "group": "blue_chip" },
+    { "symbol": "XRPUSDT", "group": "payments_layer_1" },
+    { "symbol": "ADAUSDT", "group": "payments_layer_1" },
+    { "symbol": "AVAXUSDT", "group": "payments_layer_1" },
+    { "symbol": "LINKUSDT", "group": "defi_ai" },
+    { "symbol": "UNIUSDT", "group": "defi_ai" },
+    { "symbol": "FETUSDT", "group": "defi_ai" }
+  ]
+}

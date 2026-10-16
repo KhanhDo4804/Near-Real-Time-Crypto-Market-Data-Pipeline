@@ -1,0 +1,33 @@
+# Local credentials and agent configuration
+.aws/
+.codex/
+.agents/
+.env
+.env.*
+!.env.example
+
+# Python environments and generated files
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Local pipeline outputs and runtime state
+data/
+checkpoints/
+logs/
+*.log
+
+# dbt generated files
+target/
+dbt_packages/
+
+# Editor and operating system files
+.idea/
+.vscode/
+.DS_Store
+
+docs/
