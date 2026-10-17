@@ -1,0 +1,19 @@
+SELECT *
+FROM {{ ref('stg_ohlcv_1m') }}
+WHERE symbol IS NULL
+   OR window_start IS NULL
+   OR window_end IS NULL
+   OR window_end <= window_start
+   OR "open" IS NULL
+   OR high IS NULL
+   OR low IS NULL
+   OR "close" IS NULL
+   OR volume IS NULL
+   OR trade_count IS NULL
+   OR high < low
+   OR high < "open"
+   OR high < "close"
+   OR low > "open"
+   OR low > "close"
+   OR volume < 0
+   OR trade_count <= 0

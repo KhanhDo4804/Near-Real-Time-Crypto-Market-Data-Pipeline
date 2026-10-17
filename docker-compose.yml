@@ -1,9 +1,17 @@
+x-logging: &streaming-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   kafka:
     image: apache/kafka:4.1.2
     hostname: kafka
+    restart: unless-stopped
+    logging: *streaming-logging
     ports:
-      - "9094:9092"
+      - "127.0.0.1:9094:9092"
     environment:
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: "broker, controller"
@@ -11,7 +19,7 @@ services:
 
       # Listeners
       KAFKA_LISTENERS: "HOST://:9092, INTERNAL://:19092, CONTROLLER://:29093"
-      
+
       # Advertised listeners
       KAFKA_ADVERTISED_LISTENERS: "HOST://localhost:9094, INTERNAL://kafka:19092"
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "HOST:PLAINTEXT,INTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT"
@@ -29,21 +37,123 @@ services:
       # Quản lý topic và dữ liệu
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
       KAFKA_LOG_DIRS: "/var/lib/kafka/data"
-      KAFKA_LOG_RETENTION_HOURS: "24" 
+      KAFKA_LOG_RETENTION_HOURS: "24"
+      KAFKA_LOG_RETENTION_BYTES: "536870912"
+      KAFKA_LOG_SEGMENT_BYTES: "134217728"
+      KAFKA_HEAP_OPTS: "-Xms512m -Xmx1g"
     volumes:
       - kafka-data:/var/lib/kafka/data
-  spark: 
-    image: spark:3.5.9-scala2.12-java17-python3-ubuntu
+    healthcheck:
+      test: ["CMD", "/opt/kafka/bin/kafka-topics.sh", "--bootstrap-server", "kafka:19092", "--list"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  kafka-init:
+    image: apache/kafka:4.1.2
+    depends_on:
+      kafka:
+        condition: service_healthy
+    restart: "no"
+    logging: *streaming-logging
+    entrypoint: ["/opt/kafka/bin/kafka-topics.sh"]
+    command:
+      - --bootstrap-server
+      - kafka:19092
+      - --create
+      - --if-not-exists
+      - --topic
+      - market_trades_raw
+      - --partitions
+      - "6"
+      - --replication-factor
+      - "1"
+
+  producer:
+    build:
+      context: .
+      dockerfile: producer/Dockerfile
+    image: crypto-market-producer:local
+    restart: unless-stopped
+    init: true
+    logging: *streaming-logging
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:19092
+    depends_on:
+      kafka:
+        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
+
+  spark:
+    build: ./spark
+    image: crypto-market-spark:local
     hostname: spark
+    restart: unless-stopped
+    logging: *streaming-logging
+    user: "1000:1000"
+    environment:
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
+      AWS_REGION: ${AWS_REGION:-}
+      OHLCV_OUTPUT_PATH: ${OHLCV_OUTPUT_PATH:-/opt/spark/data/ohlcv_1m}
+      OHLCV_CHECKPOINT_PATH: ${OHLCV_CHECKPOINT_PATH:-}
     working_dir: /opt/spark/jobs
     depends_on:
-      - kafka
+      kafka:
+        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
     ports:
-      - "4040:4040"
+      - "127.0.0.1:4040:4040"
     volumes:
-      - ./spark/jobs:/opt/spark/jobs
-    command: ["sleep", "infinity"]
-    
+      - ./spark/jobs:/opt/spark/jobs:ro
+      - ./data:/opt/spark/data
+      - ./checkpoints:/opt/spark/checkpoints
+
+    command: ["bash", "/opt/spark/jobs/run_kafka.sh"]
+
+  dbt:
+    user: "1000:1000"
+    build: ./dbt
+    working_dir: /usr/app/dbt
+    env_file:
+      - .env
+    volumes:
+      - ./dbt:/usr/app/dbt
+    environment:
+      DBT_PROFILES_DIR: /usr/app/dbt
+
+  airflow:
+    build: ./airflow
+    image: crypto-market-airflow:local
+    user: "${AIRFLOW_UID:-1000}:0"
+    command: standalone
+
+    ports:
+      - "8081:8080"
+
+    env_file:
+      - .env
+
+    environment:
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      DBT_EXECUTABLE: /opt/pipeline-env/bin/dbt
+      AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_USERS: "admin:admin"
+      AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_PASSWORDS_FILE: /opt/airflow/passwords.json
+
+
+    volumes:
+      - airflow-data:/opt/airflow
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/logs:/opt/airflow/logs
+      - ./redshift:/opt/project/redshift:ro
+      - ./dbt:/opt/project/dbt
+      - ./airflow/passwords.json:/opt/airflow/passwords.json
+
 volumes:
   kafka-data:
-    
+  airflow-data:
+

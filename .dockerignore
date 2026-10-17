@@ -1,0 +1,9 @@
+# The root build context is used only by producer/Dockerfile.
+# Send only its inputs; credentials and runtime data stay out of the context.
+**
+!producer/
+!producer/Dockerfile
+!producer/requirements.txt
+!producer/binance_producer.py
+!config/
+!config/market.json

@@ -1,5 +1,6 @@
 import asyncio
 import json
+import os
 import time
 
 from pathlib import Path
@@ -61,6 +62,7 @@ async def stream_trade(producer):
                     )
 
                     sent_count = 0
+                    total_latency = 0
                     report_started = now
 
         except ConnectionClosed as e:
@@ -69,8 +71,8 @@ async def stream_trade(producer):
         await asyncio.sleep(5)
 
 async def main():
-    produce = AIOKafkaProducer(\
-        bootstrap_servers="localhost:9094",
+    produce = AIOKafkaProducer(
+        bootstrap_servers=os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9094"),
     )
     await produce.start()
     try:

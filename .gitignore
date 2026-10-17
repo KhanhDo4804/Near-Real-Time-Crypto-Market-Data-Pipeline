@@ -30,4 +30,7 @@ dbt_packages/
 .vscode/
 .DS_Store
 
+DOCKER.md
 docs/
+.user.yml
+airflow/passwords.json

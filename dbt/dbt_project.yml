@@ -1,0 +1,9 @@
+name: crypto_market
+version: '1.0.0'
+config-version: 2
+
+profile: crypto_market
+
+model-paths: ["models"]
+macro-paths: ["macros"]
+test-paths: ["tests"]

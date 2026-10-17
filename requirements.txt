@@ -1,2 +1,5 @@
 websockets
 aiokafka
+boto3
+python-dotenv
+redshift-connector
