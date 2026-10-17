@@ -10,7 +10,7 @@ with DAG(
     schedule="0 * * * *",
     catchup=False,
     max_active_runs=1,
-    default_args={"retries": 0},
+    default_args={"retries": 3},
 ) as dag:
 
     command = (
