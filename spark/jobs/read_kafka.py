@@ -134,7 +134,7 @@ def main():
         .option("path", output_path)
         .option("checkpointLocation", checkpoint_path)
         .partitionBy("trade_date")
-        .trigger(processingTime="5 seconds")
+        .trigger(processingTime="30 seconds")
         .start()
     )
 

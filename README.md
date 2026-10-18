@@ -14,7 +14,7 @@ Binance → Python producer → Kafka → Spark → S3 Parquet
                            Airflow → Redshift staging → dbt → Analytics
 ```
 
-- **Streaming:** Spark processes micro-batches every 5 seconds, aggregates one-minute candles, and finalizes them using a 10-second event-time watermark.
+- **Streaming:** Spark processes micro-batches every 30 seconds, aggregates one-minute candles, and finalizes them using a 10-second event-time watermark.
 - **Warehouse:** Airflow runs hourly; dbt updates candles by `(symbol, window_start)` and tests duplicate keys and candle validity.
 - **Storage:** Parquet is partitioned by UTC trade date. `etl.loaded_files` tracks successfully processed files.
 
